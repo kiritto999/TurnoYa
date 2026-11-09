@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TurnoYa</string>
+    <string name="notif_channel_name">Turnos</string>
+    <string name="notif_channel_desc">Avisos cuando tu turno avanza o hay solicitudes nuevas</string>
+</resources>
