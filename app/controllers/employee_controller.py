@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models import Usuario
-from app.schemas.employee import EmployeeInviteCreate, EmployeePermissionsUpdate, EmployeeResponse
+from app.schemas.employee import EmployeeInviteCreate, EmployeePermissionsUpdate, EmployeeResponse, InvitationResponse
 from app.services.employee_service import EmployeeService
 
 router = APIRouter(tags=["Empleados"])
@@ -34,3 +34,23 @@ def accept_invitation(token: str, db: Session = Depends(get_db), user: Usuario =
 @router.patch("/employees/{membership_id}/permissions", response_model=EmployeeResponse)
 def update_permissions(membership_id: int, data: EmployeePermissionsUpdate, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
     return EmployeeService(db).permissions(membership_id, user, data.permisos, data.id_sector)
+
+
+@router.get("/employee-invitations/mine", response_model=list[InvitationResponse])
+def my_invitations(db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    return EmployeeService(db).my_invitations(user)
+
+
+@router.post("/employee-invitations/by-id/{membership_id}/accept", response_model=EmployeeResponse)
+def accept_by_id(membership_id: int, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    return EmployeeService(db).respond(membership_id, user, True)
+
+
+@router.post("/employee-invitations/by-id/{membership_id}/reject", response_model=EmployeeResponse)
+def reject_by_id(membership_id: int, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    return EmployeeService(db).respond(membership_id, user, False)
+
+
+@router.delete("/employees/{membership_id}", status_code=204)
+def remove_employee(membership_id: int, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    EmployeeService(db).remove(membership_id, user)

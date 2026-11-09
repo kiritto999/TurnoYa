@@ -19,9 +19,7 @@ class QRService:
         if sector_id is not None:
             self.business.ensure_sector(business_id, sector_id)
         code = secrets.token_urlsafe(32)
-        destination = f"{settings.frontend_url}/negocios/{business_id}"
-        if sector_id:
-            destination += f"?sector={sector_id}"
+        destination = f"turnoya://qr/{code}"
         qr = CodigoQR(id_negocio=business_id, id_sector=sector_id, codigo_unico=code, url_destino=destination)
         self.db.add(qr)
         self.db.commit()

@@ -19,6 +19,11 @@ def queue(business_id: int, sector_id: int | None = Query(None), db: Session = D
     return TurnService(db).queue(business_id, user, sector_id)
 
 
+@router.post("/businesses/{business_id}/queue/next", response_model=TurnResponse)
+def call_next(business_id: int, sector_id: int | None = Query(None), db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    return TurnService(db).call_next(business_id, user, sector_id)
+
+
 @router.get("/turns/my", response_model=list[TurnResponse])
 def my_turns(db: Session = Depends(get_db), user: Usuario = Depends(require_roles("cliente"))):
     return TurnService(db).my_turns(user.id_usuario)
@@ -26,7 +31,7 @@ def my_turns(db: Session = Depends(get_db), user: Usuario = Depends(require_role
 
 @router.get("/turns/{turn_id}", response_model=TurnResponse)
 def get_turn(turn_id: int, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
-    return TurnService(db).get(turn_id, user)
+    return TurnService(db).get_detailed(turn_id, user)
 
 
 @router.patch("/turns/{turn_id}/status", response_model=TurnResponse)

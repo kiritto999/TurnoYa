@@ -1,4 +1,5 @@
-from sqlalchemy import ForeignKey, String
+from decimal import Decimal
+from sqlalchemy import ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
@@ -11,6 +12,11 @@ class Negocio(Base):
     logo_url: Mapped[str | None] = mapped_column(String(255))
     categoria: Mapped[str | None] = mapped_column(String(100))
     horario: Mapped[str | None] = mapped_column(String(150))
+    descripcion: Mapped[str | None] = mapped_column(String(500))
+    direccion: Mapped[str | None] = mapped_column(String(255))
+    telefono: Mapped[str | None] = mapped_column(String(30))
+    latitud: Mapped[Decimal | None] = mapped_column(Numeric(10, 7))
+    longitud: Mapped[Decimal | None] = mapped_column(Numeric(10, 7))
     estado: Mapped[str] = mapped_column(String(20), default="activo")
     dueno: Mapped["Usuario"] = relationship(back_populates="negocios")
     sectores: Mapped[list["Sector"]] = relationship(back_populates="negocio", cascade="all, delete-orphan")

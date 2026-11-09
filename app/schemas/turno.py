@@ -23,6 +23,10 @@ class TurnResponse(ORMModel):
     nombre_negocio: str | None = None
     nombre_sector: str | None = None
     precio: float | None = None
+    nombre_item: str | None = None
+    nombre_cliente: str | None = None
+    personas_adelante: int | None = None
+    tiempo_espera_min: int | None = None
 
 class TurnStatusUpdate(BaseModel):
     estado: str = Field(pattern="^(pendiente|llamado|atendiendo|atendido|cancelado|ausente)$")

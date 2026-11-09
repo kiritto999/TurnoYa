@@ -20,7 +20,13 @@ create table negocio (
     logo_url varchar(255),
     categoria varchar(100),
     horario varchar(150),
+    descripcion varchar(500),
+    direccion varchar(255),
+    telefono varchar(30),
+    latitud decimal(10,7),
+    longitud decimal(10,7),
     estado varchar(20) not null default 'activo',
+    index idx_negocio_estado (estado),
     foreign key (id_dueno) references usuario(id_usuario)
 );
 
@@ -81,6 +87,8 @@ create table turno (
     estado varchar(20) not null default 'pendiente',
     fecha_solicitud datetime not null default current_timestamp,
     fecha_atencion datetime,
+    index idx_turno_cola (id_negocio, estado, fecha_solicitud),
+    index idx_turno_cliente (id_cliente, fecha_solicitud),
     foreign key (id_cliente) references usuario(id_usuario),
     foreign key (id_negocio) references negocio(id_negocio),
     foreign key (id_sector) references sector(id_sector),
@@ -96,6 +104,7 @@ create table notificacion (
     mensaje varchar(255) not null,
     leido boolean not null default false,
     fecha_envio datetime not null default current_timestamp,
+    index idx_notificacion_usuario (id_usuario, fecha_envio),
     foreign key (id_usuario) references usuario(id_usuario),
     foreign key (id_turno) references turno(id_turno),
     foreign key (id_negocio) references negocio(id_negocio)

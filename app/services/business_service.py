@@ -1,7 +1,8 @@
+from datetime import datetime, time
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from app.models import EmpleadoNegocio, Negocio, Sector, Usuario
+from app.models import EmpleadoNegocio, Negocio, Sector, Turno, Usuario
 from app.repositories.business_repository import BusinessRepository
 
 
@@ -64,3 +65,22 @@ class BusinessService:
         self.db.commit()
         self.db.refresh(business)
         return business
+
+    def stats(self, business_id: int, user: Usuario):
+        self.ensure_staff(business_id, user)
+        start = datetime.combine(datetime.utcnow().date(), time.min)
+        rows = self.db.execute(
+            select(Turno.estado, func.count())
+            .where(Turno.id_negocio == business_id)
+            .where((Turno.fecha_solicitud >= start) | Turno.estado.in_(["pendiente", "llamado", "atendiendo"]))
+            .group_by(Turno.estado)
+        ).all()
+        counts = {estado: int(c) for estado, c in rows}
+        today = self.db.scalar(select(func.count()).where(Turno.id_negocio == business_id, Turno.fecha_solicitud >= start)) or 0
+        return {
+            "en_espera": counts.get("pendiente", 0),
+            "llamados": counts.get("llamado", 0) + counts.get("atendiendo", 0),
+            "atendidos_hoy": counts.get("atendido", 0),
+            "cancelados_hoy": counts.get("cancelado", 0) + counts.get("ausente", 0),
+            "total_hoy": int(today),
+        }

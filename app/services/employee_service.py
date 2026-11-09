@@ -2,7 +2,8 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.security import create_access_token
-from app.models import EmpleadoNegocio, Sector, Usuario
+from app.models import EmpleadoNegocio, Negocio, Sector, Usuario
+from app.services.notification_service import NotificationService
 from app.services.business_service import BusinessService
 import jwt
 from app.core.config import settings
@@ -34,6 +35,8 @@ class EmployeeService:
             estado_invitacion="pendiente",
         )
         self.db.add(membership)
+        self.db.flush()
+        NotificationService(self.db).notify_invitation(invited.id_usuario, self.business.ensure_exists(business_id))
         self.db.commit()
         self.db.refresh(membership)
         invitation_token = jwt.encode({"employee_membership": membership.id_empleado_negocio, "uid": invited.id_usuario}, settings.secret_key, algorithm="HS256")
@@ -79,3 +82,40 @@ class EmployeeService:
         self.db.commit()
         self.db.refresh(membership)
         return membership
+
+    def my_invitations(self, user: Usuario):
+        rows = self.db.execute(
+            select(EmpleadoNegocio, Negocio.nombre, Negocio.categoria)
+            .join(Negocio, Negocio.id_negocio == EmpleadoNegocio.id_negocio)
+            .where(EmpleadoNegocio.id_usuario == user.id_usuario, EmpleadoNegocio.estado_invitacion == "pendiente")
+            .order_by(EmpleadoNegocio.fecha_invitacion.desc())
+        ).all()
+        result = []
+        for membership, nombre, categoria in rows:
+            membership.nombre_negocio = nombre
+            membership.categoria_negocio = categoria
+            membership.email = user.email
+            membership.nombre = user.nombre
+            result.append(membership)
+        return result
+
+    def respond(self, membership_id: int, current_user: Usuario, accept: bool):
+        membership = self.db.get(EmpleadoNegocio, membership_id)
+        if not membership or membership.id_usuario != current_user.id_usuario:
+            raise HTTPException(status_code=404, detail="Invitación no encontrada")
+        if membership.estado_invitacion != "pendiente":
+            raise HTTPException(status_code=409, detail="La invitación ya fue respondida")
+        membership.estado_invitacion = "aceptada" if accept else "rechazada"
+        if accept and current_user.rol == "cliente":
+            current_user.rol = "empleado"
+        self.db.commit()
+        self.db.refresh(membership)
+        return membership
+
+    def remove(self, membership_id: int, user: Usuario):
+        membership = self.db.get(EmpleadoNegocio, membership_id)
+        if not membership:
+            raise HTTPException(status_code=404, detail="Empleado no encontrado")
+        self.business.ensure_owner_or_admin(membership.id_negocio, user)
+        self.db.delete(membership)
+        self.db.commit()

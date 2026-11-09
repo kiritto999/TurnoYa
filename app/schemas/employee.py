@@ -24,3 +24,8 @@ class EmployeeResponse(ORMModel):
 class EmployeePermissionsUpdate(BaseModel):
     permisos: str = Field(max_length=255)
     id_sector: int | None = None
+
+
+class InvitationResponse(EmployeeResponse):
+    nombre_negocio: str | None = None
+    categoria_negocio: str | None = None
